@@ -1,0 +1,42 @@
+# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# COCO128 dataset https://www.kaggle.com/ultralytics/coco128 (first 128 images from COCO train2017) by Ultralytics
+# Example usage: python train.py --data coco128.yaml
+# parent
+# ├── yolov5
+# └── datasets
+#     └── coco128  ← downloads here (7 MB)
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: D:\\Graduation_Project_Coding\\network_classify\\yolov5-7.0 -first\\data\\mydataset  # dataset root dir
+train: images/train  # train images (relative to 'path') 128 images
+val:   images/val # val images (relative to 'path') 128 images
+test:   # test images (optional)
+#test_xml: my_datasets/xml
+# Classes
+
+nc: 24
+names:
+  0: Thyroid_DoubleenedRetractor_middlesize
+  1: TissueForceps_14cm
+  2: Appendix_IntestinalClamp_16cm
+  3: SRestractor_25cm
+  4: straight_OvalForceps
+  5: elbow_OvalForceps
+  6: MedicalTray_18.5cm
+  7: TowelForceps_11cm
+  8: straight_LigatureScissors_10cm
+  9: elbow_LigatureScissors_10cm
+  10: straight_LigatureScissors_18cm
+  11: elbow_LigatureScissors_16cm
+  12: Tweezers_ST_10
+  13: Tweezers_ST_11
+  14: Tweezers_ST_12
+  15: Tweezers_ST_13
+  16: Tweezers_ST_14
+  17: Tweezers_ST_15
+  18: thick_Scalpel_3
+  19: thin_Scalpel_3
+  20: thick_Scalpel_4
+  21: thin_Scalpel_4
+  22: elbow_HemostasticForceps_12.5cm
+  23: straight_HemostasticForceps_14cm
+
