@@ -1,0 +1,101 @@
+第一种注意力机制改进方法：
+    1.在将注意力机制.py文件导入models文件夹
+    2.在models文件夹下的common.py文件import 注意力机制，有8种，
+    分别是:
+    from models.SGE import SpatialGroupEnhance as SGE
+    from models.GC import GlobalContext as GC
+    from models.GAM import GAM_Attention as GAM
+    from  models.SK import SKAttention as SKA
+    from models.ECA import ECAAttention as ECA
+    from models.TripletAttention import TripletAttention as TripletA
+    from models.ShuffleAttention import ShuffleAttention as SA
+    from models.SimAM import SimAM as SAM
+
+    3.在 C3 类中，改进：
+    #改进开始
+    class C3(nn.Module):
+        # CSP Bottleneck with 3 convolutions
+        def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+            super().__init__()
+            c_ = int(c2 * e)  # hidden channels
+            self.cv1 = Conv(c1, c_, 1, 1)
+            self.cv2 = Conv(c1, c_, 1, 1)
+            self.cv3 = Conv(2 * c_, c2, 1)  # optional act=FReLU(c2)
+            self.m = nn.Sequential(*(Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n)))
+
+            # 改进
+            # 添加注意力机制
+            # self.a = attention_my(c1,c2)#test
+            self.sge = SGE() # start one -SGE attention #
+            self.gc = GC(c_) # start two -GC attention #
+            self.gam = GAM(c_) # start three -GAM attention #
+            self.ska = SKA(c_) # start four -SKA attention #
+            self.eca = ECA() # start five -ECA attention #
+            self.tra = TripletA() # start six -TripletA attention #
+            self.sa = SA(c_) # start seven -SA attention #
+            self.sam = SAM() #start eight -SAM attention #
+
+        def forward_1(self, x):
+            x1 = torch.cat((self.m(self.cv1(x)), self.cv2(x)), 1)
+            # print('x1:',x1.shape)
+            x1 = self.cv3(x1)
+            print('x1:',x1.shape)
+
+            x2 = self.sge(x1)
+            print('x2',x2.shape)
+            x = x1 + x2
+            print('x:',x.shape)
+            return x
+        def forward(self, x):
+            x2 = self.cv2(x)
+            # x3 = self.sge(x2) # sge 1
+            # x3 = self.gc(x2) # gc 2
+            # x3 = self.gam(x2) # gam 3
+            # x3 = self.ska(x2) # ska 4
+            # x3 = self.eca(x2) # eca 5
+            # x3 = self.tra(x2) # tra 6
+            # x3 = self.sa(x2) # sa 7
+            x3 =self.sam(x2) # sam 8
+
+            x1 = torch.cat((self.m(self.cv1(x)), x3), 1)
+            x1 = self.cv3(x1)
+            return x1
+    # 改进结束
+    #这里将注意力机制内嵌在C3模块，和C3模块构成注意力特征提取模块
+
+
+第二种注意力机制改进方法：
+    test:将SAM直接加入到预测头前，对yolo输出的3个特征map进行注意力操作
+    1.在将注意力机制.py文件导入models文件夹
+    2.在yolo.py文件中的parse_model函数中的
+    for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):下的367-378行添加如下内容：
+            # 我的代码  start#
+            elif m is SimAM:
+                c1, c2 = ch[f], args[0]
+                if c2 != no:  # if not output
+                    c2 = make_divisible(c2 * gw, 8)
+                args = [c1, *args[1:]]
+                    # c1, c2 = ch[f], args[0]
+                    # if c2 != no:
+                    #     c2 = make_divisible(c2 * gw, 8)
+                    # args = [c1, c2]
+            # 我的代码  end#
+  #这里将注意力机制放置在预测头前，属于附加注意力机制
+
+文章论文思路：
+    构建器械识别模型，目的是实现高效、轻量型的精确识别网络
+    1) 基于Yolov5n,5s两种轻量级模型，构建器械识别模型
+    2) (可以考虑写自己的注意力机制，大论文创新点)基于主流注意力SAM,GC,GAM,SKA,ECA,TRA,SA,SAM(暂定8种注意力)进行比较哪种注意力在热力图上的表现较好
+    3) 比较内嵌注意力和附加注意力之间的实验结果，验证附加注意力效果是否低于内嵌注意力
+    4) 验证参数 ： trainval_time,params,GFLOPS,map50,map50-95,model_size
+    5) 损失函数 ：
+    6) 注意力内嵌结构：
+        初始C3结构存在两条分支，一条是经过简单的Conv层，一条是经过bottleneck模块操作，将注意力内嵌在第一条Conv层之后
+        变成全新的C3结构
+    7) 注意力附加结构：
+        yolo结构输出3个map，分别是17，20，40，在neck网络输出之前，再进行一步注意力操作，此时，注意力模块输出附加结构
+    8) (附加点)对图像进行一步去光操作 addweighted()，验证去光操作
+
+
+
+
